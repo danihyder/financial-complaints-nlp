@@ -1,6 +1,6 @@
 # %% [markdown]
-# # Reading 4,282 Financial Complaints Without Reading Them One by One
-# ### A domain-aware NLP study of digital-payment complaints, with the modelling choices made explicit
+# # An NLP Analysis of Consumer Financial Complaints
+# ### Digital-payment complaints: themes, sentiment, priority, and outcomes
 #
 # **Author:** Daniyal Haider Mahar
 # **Methods:** text mining, topic modelling with principled model selection, domain-specific

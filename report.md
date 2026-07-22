@@ -1,5 +1,5 @@
-# What Customers Are Really Complaining About in Digital Payments
-### A study of 4,282 financial complaints, using natural language processing
+# An NLP Analysis of Consumer Financial Complaints
+### Digital-payment complaints: themes, sentiment, priority, and outcomes
 
 **Author:** Daniyal Haider Mahar
 **Data:** US CFPB Consumer Complaint Database (public)

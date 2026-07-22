@@ -1,4 +1,4 @@
-# Reading 4,282 Financial Complaints Without Reading Them One by One
+# An NLP Analysis of Consumer Financial Complaints
 
 A domain-aware NLP study of digital-payment complaints. The point is not that sentiment and topic
 modelling can be run, it is that the **modelling decisions are made explicitly and defended**: how
