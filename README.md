@@ -31,9 +31,7 @@ Most projects stop at some topics and the sentiment. The value is in the decisio
    *positive*, because angry customers write politely ("Dear Support Team, I hope this finds you
    well..."). **FinBERT**, a model fine-tuned on financial text, disagrees on 25% of complaints and is
    correct on inspection. Tool choice changes the business conclusion, not just the numbers.
-4. **An original decision metric.** I define a **Complaint Priority Index (CPI)** combining volume,
-   domain sentiment, and how rarely a theme is resolved. It reorders priorities that volume alone
-   misses, moving fund-access above fraud and lifting investment scams from smallest theme to third.
+4. **Complaint Priority Index (CPI)** combines volume, domain sentiment, and how rarely a theme is resolved. It reorders priorities that       volume alone misses, moving fund-access above fraud and lifting investment scams from smallest theme to third.
 5. **A second lens: product type.** Breaking complaints down by payment product shows virtual currency
    and mobile wallets draw the angriest complaints, and that investment scams concentrate in crypto.
 
