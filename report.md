@@ -1,7 +1,6 @@
 # An NLP Analysis of Consumer Financial Complaints
 ### Digital-payment complaints: themes, sentiment, priority, and outcomes
 
-**Author:** Daniyal Haider Mahar
 **Data:** US CFPB Consumer Complaint Database (public)
 **Methods:** text mining, topic modelling, sentiment analysis with a finance-specific model, predictive modelling
 **Companion files:** the full notebook (`complaints-nlp-analysis.ipynb`) and an interactive dashboard (`dashboard/index.html`)
