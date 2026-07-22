@@ -53,12 +53,12 @@ the decisions and in going past description, and this project shows its work on 
 
 ## Deliverables
 
-| Asset | What it is |
+| Asset | Description |
 |---|---|
-| `report.md` | A professional written analysis report (executive summary, methodology, findings, recommendations) |
+| `report.md` | Analysis report including executive summary, methodology, findings, recommendations |
 | `dashboard/index.html` | A **self-contained interactive dashboard app**. Live filters (year range, sentiment model, outcome). |
 | `complaints-nlp-analysis.ipynb` | The full reproducible notebook: code, explanations, charts |
-| `notebook.py` | The notebook as a plain script (easy to read/diff) |
+| `notebook.py` | The notebook as a plain script |
 
 ## Key visual: the priority map
 
@@ -84,18 +84,17 @@ jupyter notebook complaints-nlp-analysis.ipynb
 ```
 
 FinBERT scores are cached in `data/finbert_scores.csv`, so the notebook runs top to bottom in
-seconds. Delete that file to regenerate them from scratch (about 5 minutes on CPU); the code path is
-in the notebook.
+seconds.
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `report.md` | Professional written analysis report |
+| `report.md` | Analysis report |
 | `dashboard/index.html` | Self-contained interactive dashboard |
 | `build_dashboard.py` | Regenerates the dashboard from the data |
 | `complaints-nlp-analysis.ipynb` | The analysis: explanations, code, charts |
-| `notebook.py` | The same notebook as a plain script (easy to read/diff) |
+| `notebook.py` | Plain script  |
 | `data/complaints_money_transfer.csv` | The public complaint subset |
 | `data/finbert_scores.csv` | Cached FinBERT sentiment scores |
 | `figures/` | Exported charts |
