@@ -126,6 +126,9 @@ STYLE = """
  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 8px 6px}
  .panel h3{margin:2px 10px 0;font-size:14px} .panel .hint{margin:1px 10px 6px;font-size:11px;color:var(--mut)}
+ .panel .note{margin:10px 10px 3px;font-size:11.5px;color:var(--mut);line-height:1.55;
+   border-top:1px solid var(--line);padding-top:9px}
+ .panel .note b{color:var(--ink);font-weight:600}
  .full{grid-column:1 / -1}
  .foot{margin-top:26px;font-size:12px;color:var(--mut);border-top:1px solid var(--line);padding-top:14px}
  .js-plot{width:100%;height:330px}
@@ -178,21 +181,33 @@ BODY = """
 
   <div class="grid">
     <div class="panel"><h3>Complaint Priority Index</h3>
-      <p class="hint">Recomputed live from the filtered data. Click a bar to focus that theme.</p>
-      <div id="cpi" class="js-plot"></div></div>
+      <p class="hint">Click a bar to focus that theme across the whole dashboard.</p>
+      <div id="cpi" class="js-plot"></div>
+      <p class="note">A combined score ranking each theme by its number of complaints, how negative
+      the language is, and how rarely the complaints are resolved. It places trouble getting money out
+      above fraud, which a simple count would miss.</p></div>
     <div class="panel"><h3>Priority map</h3>
-      <p class="hint">Volume vs. sentiment; bubble size = CPI, colour = relief rate.</p>
-      <div id="bubble" class="js-plot"></div></div>
+      <p class="hint">Each bubble is one theme.</p>
+      <div id="bubble" class="js-plot"></div>
+      <p class="note">Each theme by number of complaints and average sentiment. Bubble size reflects
+      the priority score and colour shows how often complaints are resolved. Large, negative,
+      rarely-resolved themes sit in the upper left.</p></div>
     <div class="panel"><h3>Theme mix over time</h3>
       <p class="hint">Share of each year's complaints.</p>
-      <div id="trend" class="js-plot"></div></div>
+      <div id="trend" class="js-plot"></div>
+      <p class="note">The share of each year's complaints falling into each theme. Investment scams
+      rise gradually over the period, while money access and fraud remain the largest throughout.</p></div>
     <div class="panel"><h3>Sentiment distribution</h3>
-      <p class="hint">Switch the model above to compare how the two read the same complaints.</p>
-      <div id="dist" class="js-plot"></div></div>
+      <p class="hint">Switch the model above to compare the two.</p>
+      <div id="dist" class="js-plot"></div>
+      <p class="note">The spread of complaint sentiment, from negative on the left to positive on the
+      right. The general-purpose model reads many polite complaints as positive; the finance model
+      reads them as negative.</p></div>
     <div class="panel full"><h3>What language predicts winning relief</h3>
-      <p class="hint">Logistic-regression drivers (static across filters): green = predicts relief,
-      red = predicts explanation-only.</p>
-      <div id="drivers" class="js-plot" style="height:360px"></div></div>
+      <div id="drivers" class="js-plot" style="height:360px"></div>
+      <p class="note">Words most associated with each outcome, from a model trained on the complaint
+      text. Green words point to complaints that received relief; red words point to those closed with
+      only an explanation.</p></div>
   </div>
 
   <p class="foot">Data: public US CFPB Consumer Complaint Database (money transfer / virtual currency /
