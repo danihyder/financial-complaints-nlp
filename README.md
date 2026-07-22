@@ -60,7 +60,7 @@ the decisions and in going past description, and this project shows its work on 
 | Asset | Description |
 |---|---|
 | `report.md` | Analysis report including executive summary, methodology, findings, recommendations |
-| **[Interactive dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)** (`dashboard/index.html`) | A **self-contained interactive dashboard app**. |
+| **[Interactive dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)** (`dashboard/index.html`) | A **self-contained interactive dashboard**. |
 | `complaints-nlp-analysis.ipynb` | Tcode, explanations, charts |
 | `notebook.py` | Plain script |
 
