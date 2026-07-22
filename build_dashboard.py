@@ -14,7 +14,6 @@ from nltk.corpus import stopwords
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import NMF
-from sklearn.linear_model import LogisticRegression
 from plotly.offline import get_plotlyjs
 
 os.makedirs("dashboard", exist_ok=True)
@@ -46,18 +45,6 @@ LABELS = {0:"Fraud & unauthorized txns",2:"Cheque deposits",3:"Wire transfers",
 sia = SentimentIntensityAnalyzer()
 df["vader"] = df["Consumer complaint narrative"].apply(lambda t: sia.polarity_scores(str(t))["compound"])
 
-# relief drivers (static, from full data, company names excluded)
-vec = TfidfVectorizer(max_features=3000, min_df=5, max_df=0.7, stop_words=list(stop), ngram_range=(1,2))
-Xv = vec.fit_transform(df["clean"]); vocab = np.array(vec.get_feature_names_out())
-clf = LogisticRegression(max_iter=1000, class_weight="balanced").fit(Xv, df["relief"])
-coef = clf.coef_[0]
-DRIVERS = {
-    "relief_terms": list(vocab[coef.argsort()[::-1][:12]]),
-    "relief_w": [round(float(x), 3) for x in np.sort(coef)[::-1][:12]],
-    "expl_terms": list(vocab[coef.argsort()[:12]]),
-    "expl_w": [round(float(x), 3) for x in np.sort(coef)[:12]],
-}
-
 # embed only real themes (drop the noise cluster, topic 1)
 d = df[df["topic"] != 1].copy()
 DATA = {
@@ -68,7 +55,7 @@ DATA = {
     "relief": [int(x) for x in d["relief"]],
 }
 PAYLOAD = json.dumps({"data": DATA, "labels": {str(k): v for k, v in LABELS.items()},
-                      "drivers": DRIVERS, "years": sorted(int(y) for y in d["year"].unique())})
+                      "years": sorted(int(y) for y in d["year"].unique())})
 
 # ---------- HTML ----------
 STYLE = """
@@ -203,11 +190,12 @@ BODY = """
       <p class="note">The spread of complaint sentiment, from negative on the left to positive on the
       right. The general-purpose model reads many polite complaints as positive; the finance model
       reads them as negative.</p></div>
-    <div class="panel full"><h3>What language predicts winning relief</h3>
-      <div id="drivers" class="js-plot" style="height:360px"></div>
-      <p class="note">Words most associated with each outcome, from a model trained on the complaint
-      text. Green words point to complaints that received relief; red words point to those closed with
-      only an explanation.</p></div>
+    <div class="panel full"><h3>Which problems get resolved</h3>
+      <p class="hint">Share of each theme's complaints that ended with the customer getting relief.</p>
+      <div id="relief" class="js-plot" style="height:340px"></div>
+      <p class="note">The percentage of each theme's complaints closed with relief (money back or a
+      fix), rather than an explanation alone. Investment scams are resolved far less often than any
+      other problem, reinforcing why they rank so high on priority.</p></div>
   </div>
 
   <p class="foot">Data: public US CFPB Consumer Complaint Database (money transfer / virtual currency /
@@ -219,7 +207,7 @@ BODY = """
 APP = """
 <script>
 const P = __PAYLOAD__;
-const D = P.data, LAB = P.labels, DRV = P.drivers;
+const D = P.data, LAB = P.labels;
 const THEMES = Object.keys(LAB).map(Number);
 const YMIN = P.years[0], YMAX = P.years[P.years.length-1];
 const COL = {"0":"#dc2626","2":"#059669","3":"#d97706","4":"#7c3aed","5":"#2563eb","6":"#64748b"};
@@ -304,21 +292,25 @@ function drawDist(idx){
     marker:{color:S.model==="fin"?"#2563eb":"#64748b"}}],
     {...LY,xaxis:{title:"negative to positive"},yaxis:{title:"complaints"},bargap:0.02},PLOT);
 }
-function drawDrivers(){
-  Plotly.react("drivers",[
-    {type:"bar",orientation:"h",y:DRV.relief_terms.slice().reverse(),x:DRV.relief_w.slice().reverse(),
-     name:"predicts relief",marker:{color:"#059669"}},
-    {type:"bar",orientation:"h",y:DRV.expl_terms.slice().reverse(),x:DRV.expl_w.slice().reverse(),
-     name:"predicts explanation-only",marker:{color:"#dc2626"}}],
-    {...LY,margin:{t:8,l:120,r:12,b:30},barmode:"relative",legend:{orientation:"h",y:-0.15,font:{size:10}},
-     xaxis:{title:"model weight"}},PLOT);
+function drawRelief(yearIdx){
+  const a={}; THEMES.forEach(t=>a[t]={n:0,r:0});
+  yearIdx.forEach(i=>{const t=D.topic[i]; if(a[t]){a[t].n++; a[t].r+=D.relief[i];}});
+  const rows=THEMES.filter(t=>a[t].n>0).map(t=>({t,rate:a[t].r/a[t].n*100})).sort((x,y)=>x.rate-y.rate);
+  Plotly.react("relief",[{type:"bar",orientation:"h",
+    x:rows.map(r=>r.rate), y:rows.map(r=>LAB[r.t]),
+    marker:{color:rows.map(r=>r.t===4?"#dc2626":"#2563eb")},
+    text:rows.map(r=>r.rate.toFixed(1)+"%"), textposition:"outside", cliponaxis:false,
+    hovertemplate:"%{y}<br>%{x:.1f}% closed with relief<extra></extra>"}],
+    {...LY,margin:{t:8,l:150,r:30,b:30},
+     xaxis:{title:"% of complaints closed with relief",ticksuffix:"%"}},PLOT);
 }
 
 function render(){
   const bidx=baseIdx();
   const agg=aggregate(bidx);
   const focusIdx=(S.focus===null)?bidx:bidx.filter(i=>D.topic[i]===S.focus);
-  kpis(focusIdx); drawCPI(agg); drawBubble(agg); drawTrend(bidx); drawDist(focusIdx); drawDrivers();
+  const yearIdx=[]; for(let i=0;i<N;i++){ if(D.year[i]>=S.ymin && D.year[i]<=S.ymax) yearIdx.push(i); }
+  kpis(focusIdx); drawCPI(agg); drawBubble(agg); drawTrend(bidx); drawDist(focusIdx); drawRelief(yearIdx);
   document.getElementById("focusnote").textContent =
     S.focus===null ? "" : "Focused on: "+LAB[S.focus]+"  (click it again or Reset to clear)";
 }

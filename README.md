@@ -37,9 +37,9 @@ the decisions and in going past description, and this project shows its work on 
 4. **An original decision metric.** I define a **Complaint Priority Index (CPI)** combining volume,
    domain sentiment, and how rarely a theme is resolved. It reorders priorities that volume alone
    misses, moving fund-access above fraud and lifting investment scams from smallest theme to third.
-5. **From description to prediction.** A logistic-regression model predicts which complaints win
-   *relief* vs. only an explanation, and reads out the drivers: concrete disputes (frozen funds, held
-   balances) tend to be resolved; scams and verification problems tend not to be.
+5. **Outcomes are tied back to the themes.** Measuring how often each theme is actually resolved shows
+   investment scams are settled far less often (6.4%) than any other problem (12 to 18%), a gap
+   confirmed as significant rather than chance.
 6. **The findings are read critically.** One topic is openly flagged as low-coherence noise, the
    sentiment anomaly is explained with evidence, and the modest predictive power is stated honestly.
 
@@ -50,8 +50,8 @@ the decisions and in going past description, and this project shows its work on 
 - **The Complaint Priority Index reorders the picture:** *accessing and withdrawing funds* is the top
   priority (highest volume-weighted anger, low resolution), and *investment scams* rise to third
   despite low volume, because only **6.4% of scam complaints win any relief** (vs 15.7% overall).
-- **Relief is predictable in direction:** concrete disputes get resolved; scams and verification
-  problems rarely do.
+- **Scams are rarely resolved:** only 6.4% of scam complaints end in relief, against 12 to 18% for
+  every other problem.
 
 ## Deliverables
 

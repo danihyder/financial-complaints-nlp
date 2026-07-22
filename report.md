@@ -2,7 +2,7 @@
 ### Digital-payment complaints: themes, sentiment, priority, and outcomes
 
 **Data:** US CFPB Consumer Complaint Database (public)
-**Methods:** text mining, topic modelling, sentiment analysis with a finance-specific model, predictive modelling
+**Methods:** text mining, topic modelling, sentiment analysis with a finance-specific model, outcome analysis by theme
 **Companion files:** the full notebook (`complaints-nlp-analysis.ipynb`) and an interactive dashboard (`dashboard/index.html`)
 
 ---
@@ -28,8 +28,9 @@ Four things stand out:
 3. **Scam victims get the least help.** Only 6.4% of scam complaints ended with the customer getting
    anything back, compared with about 16% overall. The word "scam" is the single clearest sign a
    complaint will get a reply and nothing more.
-4. **Clear-cut problems get fixed; fuzzy ones do not.** Complaints about frozen money or a specific
-   charge tend to get resolved. Scams and identity-check problems usually do not.
+4. **What a complaint is about decides how it ends.** Resolution rates run from 6% for scams to 18%
+   for money-access problems, a gap far too large to be chance. The type of problem, not the wording,
+   is what shapes the outcome.
 
 The rest of this report explains the data, how the analysis was done and why, the findings in full,
 and where the limits are.
@@ -112,12 +113,16 @@ The idea: a problem deserves attention based on how many people it affects, how 
 how often they are left without help. The weights are a clear, adjustable choice, not something
 hidden.
 
-### 3.5 Predicting who gets helped (my own model)
+### 3.5 Linking each theme to its outcome
 
-Finally, I moved from describing the complaints to predicting their outcome. Using the CFPB's record
-of how each case ended, I marked every complaint as either **got relief** (money back or a fix) or
-**explanation only** (a reply, but nothing given). Then I trained a simple model on the complaint text
-to learn which words point to which outcome.
+Finally, I connected the themes to what actually happened to the customer. Using the CFPB's record of
+how each case ended, I marked every complaint as either **got relief** (money back or a fix) or
+**explanation only** (a reply, but nothing given), then measured the relief rate for each theme. A
+chi-square test checks whether the differences between themes are real or just chance.
+
+(An earlier version trained a model on the raw complaint words to predict the outcome. It was dropped:
+its "important" words were mostly generic noise with no real meaning, and the theme-level view below is
+both more honest and more useful.)
 
 ## 4. What the data shows
 
@@ -165,20 +170,23 @@ staying polite, and rarely helped. And **investment scams**, the smallest group 
 third, because people are furious and almost never get anything back. Counting alone would have hidden
 both. *(See the interactive dashboard.)*
 
-### 4.5 Who gets helped, and who does not
+### 4.5 Which problems get resolved
 
-The prediction model is honestly only so-so at guessing the outcome (it gets the ranking right about
-63% of the time), because whether someone gets helped depends a lot on company policy that the text
-cannot see. But the *direction* is clear and useful:
+How often a complaint ends with the customer actually getting something back varies sharply by theme:
 
-- **Points to getting help:** *froze, holding, item, seller, purchases.* Clear, specific,
-  checkable problems.
-- **Points to an explanation and nothing more:** *scam, verification, never received.* Fuzzy cases,
-  or ones where blame is hard to pin down.
+| Theme | Complaints | Closed with relief |
+|---|---:|---:|
+| Investment scams | 156 | **6.4%** |
+| Wire transfers | 469 | 12.4% |
+| Cheque deposits | 343 | 14.9% |
+| Account limits & appeals | 254 | 15.4% |
+| Fraud & unauthorised transactions | 1,760 | 16.4% |
+| Trouble getting / withdrawing money | 1,199 | 18.3% |
 
-Put next to the priority ranking, this sharpens the main message: **investment scams are the angriest,
-fastest-growing, and least-helped group of all**, and the current way complaints are handled serves
-those victims worst.
+Every other problem is resolved 12% to 18% of the time; **investment scams sit at just 6.4%**, less
+than half the overall rate of about 16%. A chi-square test confirms the gap is real, not chance
+(p = 0.001). This sharpens the main message: **investment scams are the angriest, fastest-growing, and
+least-resolved group of all**, and the current way complaints are handled serves those victims worst.
 
 ### 4.6 How things changed over time
 
@@ -206,8 +214,8 @@ Stated plainly, because it matters:
   visibly reorders priorities that a simple count would miss.
 - **The "politeness trap"** is a specific, measured finding: a common tool fails on polite financial
   complaints, and that failure changes the conclusions.
-- **The prediction model** takes the work past describing complaints and into predicting how they end,
-  and shows which words drive each outcome.
+- **Linking themes to outcomes** connects each problem to how often it is actually resolved, and shows
+  (with a significance test) that scam complaints are handled far worse than any other kind.
 - **Every method choice is shown and explained**, and the one weak theme is flagged rather than hidden.
 
 ## 7. The limits
@@ -215,8 +223,9 @@ Stated plainly, because it matters:
 - FinBERT was trained on financial news, not complaints, so it is a close proxy rather than a perfect
   fit. A production version would be trained on labelled complaints.
 - The themes are soft groupings that need judgement to read, and one of them is genuinely noise.
-- The prediction model is only a rough guide, since outcomes depend on company policy the text cannot
-  see. Read it for direction, not as a decision tool.
+- The relief rates describe what happened, not why. Outcomes also depend on company policy and the
+  facts of each case, which this data does not capture, so the theme differences are a strong signal,
+  not a full explanation.
 - A complaints database only reflects people annoyed enough to file a formal complaint, not every
   customer.
 

@@ -21,7 +21,7 @@
 #   a finance-domain model (Section 5).
 # - **What actually changed over eight years** (Section 6), because a single snapshot hides the trend.
 # - **An original priority metric** I define to turn the measurements into a ranked decision
-#   (Section 7), and **a predictive model** of which complaints win relief (Section 8).
+#   (Section 7), and a look at **which problems actually get resolved** (Section 8).
 #
 # ### The data
 #
@@ -362,57 +362,46 @@ print("Ranked by CPI        :", list(cpi["theme"]))
 # negative and almost never resolved. Volume alone would have buried both.
 
 # %% [markdown]
-# ## 8. From describing to predicting: which complaints win relief?
+# ## 8. Which problems get resolved?
 #
-# The final step moves past description. Using the CFPB outcome field, each complaint is labelled
-# **relief** (closed with monetary or non-monetary relief) or **explanation-only**. A logistic
-# regression on the complaint text learns which language predicts each outcome. The point is not a
-# perfect classifier (text cannot see a company's internal policy), it is the *direction* of the
-# signal: what kind of complaint tends to get resolved.
+# Describing the complaints does not say whether they get fixed. Using the CFPB outcome field, each
+# complaint is labelled **relief** (money back or a fix) or **explanation-only** (a reply, nothing
+# given), and the relief rate is measured per theme. A chi-square test checks whether the differences
+# between themes are real or just chance.
+#
+# (An earlier version trained a model on the raw complaint words to predict the outcome. It was
+# dropped: its "important" words were mostly generic noise with no real meaning. The theme-level view
+# below is more honest and more useful.)
 
 # %%
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_predict, StratifiedKFold
-from sklearn.metrics import roc_auc_score, average_precision_score
+from scipy.stats import chi2_contingency
 
-pred_vec = TfidfVectorizer(max_features=3000, min_df=5, max_df=0.7,
-                           stop_words=list(custom_stop), ngram_range=(1, 2))
-Xp = pred_vec.fit_transform(df["clean"])
-pred_vocab = np.array(pred_vec.get_feature_names_out())
-clf = LogisticRegression(max_iter=1000, class_weight="balanced")
-cv_prob = cross_val_predict(clf, Xp, df["relief"],
-                            cv=StratifiedKFold(5, shuffle=True, random_state=42),
-                            method="predict_proba")[:, 1]
-print(f"Overall relief rate (base rate): {df['relief'].mean()*100:.1f}%")
-print(f"5-fold CV ROC-AUC: {roc_auc_score(df['relief'], cv_prob):.3f}  "
-      f"(0.5 = random; a modest but real signal)")
-print(f"5-fold CV PR-AUC : {average_precision_score(df['relief'], cv_prob):.3f}  "
-      f"(vs {df['relief'].mean():.3f} baseline)")
+real = df[df["topic"] != 1]
+by_theme = (real.groupby("topic").agg(n=("relief", "size"), relief_rate=("relief", "mean"))
+            .reset_index().sort_values("relief_rate"))
+by_theme["theme"] = by_theme["topic"].map(LABELS)
+chi2, pval, _, _ = chi2_contingency(pd.crosstab(real["topic"], real["relief"]))
 
-clf.fit(Xp, df["relief"]); coef = clf.coef_[0]
-relief_terms = pred_vocab[coef.argsort()[::-1][:12]]
-expl_terms = pred_vocab[coef.argsort()[:12]]
+fig, ax = plt.subplots(figsize=(9, 4.5))
+colors = ["#dc2626" if t == 4 else PRIMARY for t in by_theme["topic"]]
+ax.barh(by_theme["theme"], by_theme["relief_rate"] * 100, color=colors)
+for y, v in enumerate(by_theme["relief_rate"] * 100):
+    ax.text(v + 0.25, y, f"{v:.1f}%", va="center", fontsize=9)
+ax.set_title("Share of each theme's complaints closed with relief")
+ax.set_xlabel("% closed with relief"); ax.set_xlim(0, by_theme["relief_rate"].max()*100 + 4)
+plt.tight_layout(); plt.savefig("figures/06_relief_by_theme.png", dpi=120, bbox_inches="tight"); plt.show()
 
-fig, ax = plt.subplots(figsize=(10, 5))
-ax.barh(range(12), np.sort(coef)[::-1][:12], color="#059669", label="predicts RELIEF")
-ax.barh(range(12), np.sort(coef)[:12][::-1], color="#dc2626", label="predicts EXPLANATION-ONLY")
-ax.set_yticks(range(12)); ax.set_yticklabels(relief_terms, fontsize=9)
-ax2 = ax.twinx(); ax2.set_yticks(range(12)); ax2.set_yticklabels(expl_terms[::-1], fontsize=9)
-ax2.set_ylim(ax.get_ylim())
-ax.set_title("What language predicts a complaint winning relief"); ax.legend(loc="lower right", fontsize=9)
-ax.set_xlabel("Model weight")
-plt.tight_layout(); plt.savefig("figures/06_relief_drivers.png", dpi=120, bbox_inches="tight"); plt.show()
-
-print("\nPredicts RELIEF (concrete disputes):", ", ".join(relief_terms))
-print("Predicts EXPLANATION-ONLY (rarely resolved):", ", ".join(expl_terms))
-scam_relief = df[df["topic"] == 4]["relief"].mean() * 100
-print(f"\nInvestment-scam relief rate: {scam_relief:.1f}% (vs {df['relief'].mean()*100:.1f}% overall)")
+print((by_theme.assign(relief_pct=(by_theme["relief_rate"]*100).round(1)))
+      [["theme", "n", "relief_pct"]].to_string(index=False))
+print(f"\nOverall relief rate: {real['relief'].mean()*100:.1f}%")
+print(f"Chi-square (theme vs relief): chi2={chi2:.1f}, p={pval:.1e}  (p < 0.05 means the theme matters)")
 
 # %% [markdown]
-# **The finding.** Concrete, specific disputes (frozen funds, held balances, named purchases) tend to
-# win relief; scams and verification problems tend not to. This closes the loop with the CPI:
-# investment scams are the angriest, fastest-growing, *and* least-resolved segment, so current
-# complaint handling serves those victims least.
+# **The finding.** Every theme is resolved 12% to 18% of the time, except **investment scams at just
+# 6.4%**, less than half the overall rate. The chi-square test confirms the gap is real, not chance
+# (p is about 0.001). This closes the loop with the CPI: investment scams are the angriest,
+# fastest-growing, *and* least-resolved segment, so current complaint handling serves those victims
+# least.
 
 # %% [markdown]
 # ## 9. What an analyst would report
@@ -443,9 +432,9 @@ print(f"\nInvestment-scam relief rate: {scam_relief:.1f}% (vs {df['relief'].mean
 # 2. **Topic count is a defended decision, not a default.** The most "coherent" model was unusable
 #    because it collapsed everything into one topic; the reported structure comes from balancing
 #    coherence against actionable separation, and one residual cluster is openly flagged as noise.
-# 3. **Description was turned into a decision, and then a prediction.** The Complaint Priority Index
-#    (Section 7) ranks where to act and reorders what volume alone would show; the relief model
-#    (Section 8) identifies which complaints get resolved and which do not.
+# 3. **Description was turned into a decision, and then tied to outcomes.** The Complaint Priority
+#    Index (Section 7) ranks where to act and reorders what volume alone would show; the theme-level
+#    relief view (Section 8) shows which problems actually get resolved and which do not.
 #
 # This is the same read I applied to community and support text in prior roles: model the whole
 # corpus, choose tools that fit the domain, define a metric that ranks the decision, and be honest
