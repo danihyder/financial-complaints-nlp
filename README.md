@@ -56,7 +56,7 @@ the decisions and in going past description, and this project shows its work on 
 | Asset | What it is |
 |---|---|
 | `report.md` | A professional written analysis report (executive summary, methodology, findings, recommendations) |
-| `dashboard/index.html` | A **self-contained interactive dashboard app** (like Tableau / Power BI, but a single HTML file). Live filters (year range, sentiment model, outcome), click-a-theme cross-filtering, and KPIs + the Complaint Priority Index that recompute client-side. Open in any browser or host on GitHub Pages. |
+| `dashboard/index.html` | A **self-contained interactive dashboard app**. Live filters (year range, sentiment model, outcome). |
 | `complaints-nlp-analysis.ipynb` | The full reproducible notebook: code, explanations, charts |
 | `notebook.py` | The notebook as a plain script (easy to read/diff) |
 
