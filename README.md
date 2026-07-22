@@ -1,5 +1,7 @@
 # An NLP Analysis of Consumer Financial Complaints
 
+### ▶ [Open the live interactive dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)
+
 A domain-aware NLP study of digital-payment complaints. The point is not that sentiment and topic
 modelling can be run, it is that the **modelling decisions are made explicitly and defended**: how
 the vocabulary is built, how the number of topics is chosen, and why a generic sentiment tool is the
@@ -56,7 +58,7 @@ the decisions and in going past description, and this project shows its work on 
 | Asset | Description |
 |---|---|
 | `report.md` | Analysis report including executive summary, methodology, findings, recommendations |
-| `dashboard/index.html` | A **self-contained interactive dashboard app**. Live filters (year range, sentiment model, outcome). |
+| **[Live dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)** (`dashboard/index.html`) | A **self-contained interactive dashboard app**. Live filters (year range, sentiment model, outcome). |
 | `complaints-nlp-analysis.ipynb` | The full reproducible notebook: code, explanations, charts |
 | `notebook.py` | The notebook as a plain script |
 
