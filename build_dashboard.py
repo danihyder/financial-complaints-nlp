@@ -205,10 +205,9 @@ BODY = """
       are.</p></div>
   </div>
 
-  <p class="foot">Data: public US CFPB Consumer Complaint Database (money transfer / virtual currency /
-  money service, complaints with narratives, 2017-2024). A small low-coherence cluster of complaints is
-  left out of the theme breakdowns. No confidential or employer data; company names excluded from the
-  analysis.</p>
+  <p class="foot">Data: public US CFPB Consumer Complaint Database (money transfer, virtual currency and
+  money service complaints, 2017-2024). No confidential or employer data; company names are excluded
+  from the analysis.</p>
 </div>
 """
 
