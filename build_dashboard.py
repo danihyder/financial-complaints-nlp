@@ -54,6 +54,7 @@ SP_LABELS = ["Mobile / digital wallet", "Domestic transfer", "Virtual currency",
 sp_map = {"Mobile or digital wallet": 0, "Domestic (US) money transfer": 1,
           "Virtual currency": 2, "International money transfer": 3}
 d["sp"] = d["Sub-product"].map(sp_map).fillna(4).astype(int)
+d["is_scam"] = d["Issue"].str.contains("fraud|scam", case=False, na=False).astype(int)
 
 DATA = {
     "topic": [int(x) for x in d["topic"]],
@@ -62,6 +63,7 @@ DATA = {
     "vad": [round(float(x), 3) for x in d["vader"]],
     "relief": [int(x) for x in d["relief"]],
     "sp": [int(x) for x in d["sp"]],
+    "scam": [int(x) for x in d["is_scam"]],
 }
 PAYLOAD = json.dumps({"data": DATA, "labels": {str(k): v for k, v in LABELS.items()},
                       "sp_labels": SP_LABELS,
@@ -248,12 +250,12 @@ function aggregate(idx){
 function kpis(idx){
   const n=idx.length;
   const neg=idx.filter(i=>sentOf(i)<=-0.05).length/(n||1)*100;
-  const rel=idx.filter(i=>D.relief[i]===1).length/(n||1)*100;
+  const scam=idx.filter(i=>D.scam[i]===1).length/(n||1)*100;
   const {a,T}=aggregate(idx);
   let top="-",best=-1; T.forEach(t=>{if(a[t].cpi>best){best=a[t].cpi;top=LAB[t];}});
   const K=[[n.toLocaleString(),"complaints in view"],
            [neg.toFixed(0)+"%","negative sentiment"],
-           [rel.toFixed(1)+"%","won relief"],
+           [scam.toFixed(0)+"%","fraud or scam"],
            [top,"highest-priority theme"]];
   document.getElementById("kpis").innerHTML=K.map(k=>
     `<div class="kpi"><div class="n">${k[0]}</div><div class="l">${k[1]}</div></div>`).join("");
