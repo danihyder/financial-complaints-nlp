@@ -7,7 +7,7 @@ modelling can be run, it is that the **modelling decisions are made explicitly a
 the vocabulary is built, how the number of topics is chosen, and why a generic sentiment tool is the
 wrong instrument for financial text.
 
-**Skills shown:** text mining, topic modelling with principled model selection (coherence + balance),
+**Skills used:** text mining, topic modelling with principled model selection (coherence + balance),
 domain-specific sentiment modelling benchmarked against a baseline, temporal analysis, and the
 judgement to read model output critically.
 **Stack:** Python, pandas, scikit-learn (TF-IDF, NMF), NLTK (VADER), Hugging Face Transformers
@@ -60,9 +60,9 @@ the decisions and in going past description, and this project shows its work on 
 | Asset | Description |
 |---|---|
 | `report.md` | Analysis report including executive summary, methodology, findings, recommendations |
-| **[Interactive dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)** (`dashboard/index.html`) | A **self-contained interactive dashboard app**. Filters for year range, sentiment model, and outcome; click any theme or product to cross-filter every chart. |
-| `complaints-nlp-analysis.ipynb` | The full reproducible notebook: code, explanations, charts |
-| `notebook.py` | The notebook as a plain script |
+| **[Interactive dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)** (`dashboard/index.html`) | A **self-contained interactive dashboard app**. |
+| `complaints-nlp-analysis.ipynb` | Tcode, explanations, charts |
+| `notebook.py` | Plain script |
 
 ## Key visual: the priority map
 
