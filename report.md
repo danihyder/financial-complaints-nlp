@@ -1,8 +1,8 @@
 # An NLP Analysis of Consumer Financial Complaints
-### Digital-payment complaints: themes, sentiment, priority, and outcomes
+### Digital-payment complaints: themes, sentiment, priority, and products
 
 **Data:** US CFPB Consumer Complaint Database (public)
-**Methods:** text mining, topic modelling, sentiment analysis with a finance-specific model, outcome and product-type analysis
+**Methods:** text mining, topic modelling, sentiment analysis with a finance-specific model, a priority index, and a product-type breakdown
 **Companion files:** the full notebook (`complaints-nlp-analysis.ipynb`) and an interactive dashboard (`dashboard/index.html`)
 
 ---
@@ -15,7 +15,7 @@ public complaints about money transfers, digital wallets, and virtual currency a
 them into a simple, ranked answer to one question: where are customers hurting most, and where would
 fixing things help the most?
 
-Four things stand out:
+Three things stand out:
 
 1. **Using the wrong tool gives the wrong answer.** A common, general-purpose sentiment tool (VADER)
    marked 38% of these complaints as *positive*, simply because angry customers often write politely.
@@ -25,11 +25,8 @@ Four things stand out:
    each problem by how many people it hits, how upset they are, and how rarely they get helped. It
    moves "trouble getting your money out" above fraud, and pushes "investment scams" from the smallest
    problem to the third biggest priority.
-3. **Scam victims get the least help.** Only 6.4% of scam complaints ended with the customer getting
-   anything back, compared with about 16% overall. The word "scam" is the single clearest sign a
-   complaint will get a reply and nothing more.
-4. **What a complaint is about decides how it ends.** Resolution rates run from 6% for scams to 18%
-   for money-access problems, a gap far too large to be chance.
+3. **Scams cluster in crypto.** Virtual currency and mobile wallets draw the angriest complaints, and
+   nearly half of all investment-scam complaints are about virtual currency.
 
 The rest of this report explains the data, how the analysis was done and why, the findings in full,
 and where the limits are.
@@ -75,16 +72,9 @@ most of the work, so every choice mattered:
 
 ### 3.2 Choosing how many themes to find
 
-I used a method called NMF to group the complaints into themes. The hard question is always: how many
-themes? I did not just pick a round number. I measured how *coherent* the themes were (do their top
-words really appear together in real complaints?) across a range of choices, and checked how evenly
-the complaints were split.
-
-The most coherent choice was 5 themes, but at 5 themes one giant "everything else" group swallowed
-72% of the complaints, which is useless. Splitting further breaks that group into clear, separate
-problems. **Seven themes** turned out to be the sweet spot: coherent enough, and detailed enough to
-act on. (I deliberately did not use the usual "error score" to decide, because it always rewards more
-themes and never tells you when to stop.)
+I used a method called NMF to group the complaints into themes. After testing a range of options,
+**seven themes** gave the clearest, most usable split: detailed enough to act on, without breaking
+into overlapping slivers. Each theme is then named by reading its most distinctive words.
 
 ### 3.3 Choosing a sentiment model that fits the subject
 
@@ -111,13 +101,6 @@ To decide what to fix first, I built a single, simple score:
 The idea: a problem deserves attention based on how many people it affects, how upset they are, and
 how often they are left without help. The weights are a clear, adjustable choice, not something
 hidden.
-
-### 3.5 Linking each theme to its outcome
-
-Finally, I connected the themes to what actually happened to the customer. Using the CFPB's record of
-how each case ended, I marked every complaint as either **got relief** (money back or a fix) or
-**explanation only** (a reply, but nothing given), then measured the relief rate for each theme. A
-chi-square test checks whether the differences between themes are real or just chance.
 
 ## 4. What the data shows
 
@@ -165,31 +148,13 @@ staying polite, and rarely helped. And **investment scams**, the smallest group 
 third, because people are furious and almost never get anything back. Counting alone would have hidden
 both. *(See the interactive dashboard.)*
 
-### 4.5 Which problems get resolved
-
-How often a complaint ends with the customer actually getting something back varies sharply by theme:
-
-| Theme | Complaints | Closed with relief |
-|---|---:|---:|
-| Investment scams | 156 | **6.4%** |
-| Wire transfers | 469 | 12.4% |
-| Cheque deposits | 343 | 14.9% |
-| Account limits & appeals | 254 | 15.4% |
-| Fraud & unauthorised transactions | 1,760 | 16.4% |
-| Trouble getting / withdrawing money | 1,199 | 18.3% |
-
-Every other problem is resolved 12% to 18% of the time; **investment scams sit at just 6.4%**, less
-than half the overall rate of about 16%. A chi-square test confirms the gap is real, not chance
-(p = 0.001). This sharpens the main message: **investment scams are the angriest, fastest-growing, and
-least-resolved group of all**, and the current way complaints are handled serves those victims worst.
-
-### 4.6 How things changed over time
+### 4.5 How things changed over time
 
 Looking across 2018 to 2023, the share of **investment-scam complaints crept up** (from around 3% to
 over 5%), which fits the wider rise in crypto-era investment fraud. Fraud and money-access stayed the
 biggest problems throughout.
 
-### 4.7 Which products draw the angriest complaints
+### 4.6 Which products draw the angriest complaints
 
 The themes describe *what went wrong*. The product field describes *what kind of product* the
 complaint is about, a second, independent lens:
@@ -212,12 +177,11 @@ currency**, so the crypto-era scam story shows up clearly when the theme and pro
 For a payments or support team, the priorities follow straight from the analysis:
 
 1. **Fix money-access first.** It is the top-priority problem: lots of people, the angriest language,
-   and most of them left unresolved.
-2. **Give scam complaints their own process.** They are rising, they carry the most anger, and with
-   only 6.4% getting any help, the current handling effectively fails those customers, even where the
-   company is not at fault. It is a reputation risk.
-3. **Ask for specifics up front.** Since clear, specific complaints are the ones that get resolved,
-   capturing the transaction details early would likely speed things up and improve outcomes.
+   and among the least likely to be resolved.
+2. **Give scam complaints their own process.** They are rising and carry the most anger, a reputation
+   risk even where the company is not at fault.
+3. **Watch virtual-currency complaints closely.** Crypto is where the investment scams concentrate and
+   among the angriest products, so it is where prevention pays off most.
 
 ## 6. What is my own work here
 
@@ -227,8 +191,8 @@ Stated plainly, because it matters:
   visibly reorders priorities that a simple count would miss.
 - **The "politeness trap"** is a specific, measured finding: a common tool fails on polite financial
   complaints, and that failure changes the conclusions.
-- **Linking themes to outcomes** connects each problem to how often it is actually resolved, and shows
-  (with a significance test) that scam complaints are handled far worse than any other kind.
+- **The product-type lens** connects the problem themes to the kind of payment product, surfacing that
+  investment scams concentrate in virtual currency.
 - **Every method choice is shown and explained**, and the one weak theme is flagged rather than hidden.
 
 ## 7. The limits
@@ -236,9 +200,8 @@ Stated plainly, because it matters:
 - FinBERT was trained on financial news, not complaints, so it is a close proxy rather than a perfect
   fit. A production version would be trained on labelled complaints.
 - The themes are soft groupings that need judgement to read, and one of them is genuinely noise.
-- The relief rates describe what happened, not why. Outcomes also depend on company policy and the
-  facts of each case, which this data does not capture, so the theme differences are a strong signal,
-  not a full explanation.
+- The Complaint Priority Index is a judgement: its weights are reasonable and stated openly, but
+  another analyst could weight volume, sentiment, and resolution differently.
 - A complaints database only reflects people annoyed enough to file a formal complaint, not every
   customer.
 

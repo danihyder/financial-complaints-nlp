@@ -1,27 +1,24 @@
 # %% [markdown]
 # # An NLP Analysis of Consumer Financial Complaints
-# ### Digital-payment complaints: themes, sentiment, priority, and outcomes
+# ### Digital-payment complaints: themes, sentiment, priority, and products
 #
-# **Methods:** text mining, topic modelling with principled model selection, domain-specific
-# sentiment (FinBERT) benchmarked against a generic baseline, temporal analysis.
+# **Methods:** text mining, topic modelling, domain-specific sentiment analysis (FinBERT) benchmarked
+# against a generic baseline, temporal analysis, and a product-type breakdown.
 # **Stack:** Python, pandas, scikit-learn, NLTK, Hugging Face Transformers, matplotlib.
 #
 # ---
 #
 # ### Overview
 #
-# Sentiment-and-topics on complaint text is a common exercise. The parts that matter, and that this
-# notebook makes visible rather than hiding, are the *decisions*:
+# This notebook works through a digital-payment complaints dataset in a structured way:
 #
-# - **How the vocabulary was built** (Section 3) rather than dumped into a black box.
-# - **How the number of topics was chosen** (Section 4), using topic coherence and a balance check,
-#   not a round number picked by hand.
-# - **Why a generic sentiment tool is the wrong choice here**, shown with evidence, and replaced with
-#   a finance-domain model (Section 5).
-# - **What actually changed over eight years** (Section 6), because a single snapshot hides the trend.
-# - **An original priority metric** I define to turn the measurements into a ranked decision
-#   (Section 7), a look at **which problems actually get resolved** (Section 8), and **which products
-#   draw the angriest complaints** (Section 9).
+# - **Building the vocabulary** from the complaint text (Section 3).
+# - **Grouping complaints into themes** with topic modelling (Section 4).
+# - **Measuring sentiment with a finance-domain model** rather than a generic one, and showing why it
+#   matters (Section 5).
+# - **Tracking how the complaint mix changed over time** (Section 6).
+# - **Ranking the themes with a Complaint Priority Index** (Section 7).
+# - **Breaking complaints down by product type** (Section 8).
 #
 # ### The data
 #
@@ -43,9 +40,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import NMF
-from scipy.sparse import csc_matrix
 
 warnings.filterwarnings("ignore")
 plt.rcParams.update({
@@ -133,57 +129,9 @@ print("Sample of the vocabulary:", ", ".join(list(vocab[::150])))
 # %% [markdown]
 # ## 4. Selecting the Number of Topics
 #
-# The hardest honest question in topic modelling is "how many topics?". Two things people get wrong:
-# picking a round number, or trusting reconstruction error (which always improves with more topics,
-# so it never tells you to stop). Instead we use **topic coherence** (a UMass-style measure of how
-# often a topic's top words actually co-occur in real complaints; higher is better) and then apply a
-# **balance check**, because the highest-coherence model here turns out to be useless in practice.
-
-# %%
-# Binary doc-term matrix for coherence
-counts = CountVectorizer(vocabulary=vocab, binary=True).fit_transform(df["clean"])
-counts_c = csc_matrix(counts)
-doc_freq = np.asarray(counts.sum(axis=0)).ravel()
-
-def umass_coherence(component_row, n=10):
-    top = component_row.argsort()[::-1][:n]
-    total, pairs = 0.0, 0
-    for m in range(1, len(top)):
-        for l in range(m):
-            co = counts_c[:, top[m]].multiply(counts_c[:, top[l]]).sum()
-            total += np.log((co + 1) / (doc_freq[top[l]] if doc_freq[top[l]] else 1))
-            pairs += 1
-    return total / pairs if pairs else 0.0
-
-ks, coh, recon, largest_share = [], [], [], []
-for k in range(4, 13):
-    m = NMF(n_components=k, random_state=42, init="nndsvd", max_iter=400)
-    W = m.fit_transform(X); H = m.components_
-    ks.append(k)
-    coh.append(np.mean([umass_coherence(H[t]) for t in range(k)]))
-    recon.append(m.reconstruction_err_)
-    largest_share.append(np.bincount(W.argmax(1), minlength=k).max() / len(df))
-
-fig, (a1, a2) = plt.subplots(1, 2, figsize=(13, 4.5))
-a1.plot(ks, coh, "o-", color=PRIMARY, lw=2)
-a1.axvline(5, ls="--", color="#94a3b8"); a1.axvline(7, ls="--", color="#dc2626")
-a1.set_title("Topic coherence peaks at k=5"); a1.set_xlabel("Number of topics"); a1.set_ylabel("Mean UMass coherence")
-a2.plot(ks, [s*100 for s in largest_share], "o-", color="#dc2626", lw=2)
-a2.axhline(72, ls=":", color="#94a3b8")
-a2.set_title("...but at k=5 one topic swallows 72% of complaints")
-a2.set_xlabel("Number of topics"); a2.set_ylabel("Share in the single largest topic (%)")
-plt.tight_layout(); plt.savefig("figures/02_topic_selection.png", dpi=120, bbox_inches="tight"); plt.show()
-
-for k, c, s in zip(ks, coh, largest_share):
-    print(f"k={k:2d}  coherence={c:.3f}  largest-topic share={s*100:4.1f}%")
-
-# %% [markdown]
-# **The decision.** Coherence is best at k=5, but at k=5 a single catch-all topic absorbs 72% of all
-# complaints, which is analytically worthless. Raising k splits that catch-all into distinct,
-# actionable themes; coherence declines only gently to k=7 and then the model starts fragmenting.
-# **k=7 is the balance point:** every major theme separates cleanly, at a small, deliberate cost in
-# coherence. This trade-off, coherence against actionable granularity, is the judgement the metric
-# alone cannot make.
+# The complaints are grouped into themes with NMF (non-negative matrix factorisation). Seven topics
+# gave the clearest, most usable separation: detailed enough to act on, without splitting into
+# overlapping slivers. Each topic is then labelled by reading its most distinctive words.
 
 # %%
 K = 7
@@ -195,10 +143,9 @@ df["topic"] = W.argmax(axis=1)
 def top_words(t, n=9):
     return [vocab[i] for i in H[t].argsort()[::-1][:n]]
 
-# Human-interpreted labels, assigned by reading the top words AND a representative complaint each
 LABELS = {
     0: "Fraud & unauthorized transactions",
-    1: "Low-coherence cluster (templated text)",
+    1: "Uncategorised (templated text)",
     2: "Cheque deposits & cashing",
     3: "Wire transfers",
     4: "Investment scams",
@@ -206,17 +153,12 @@ LABELS = {
     6: "Account limitations & appeals",
 }
 for t in range(K):
-    rep_idx = W[:, t].argmax()   # the single most representative complaint for this topic
-    rep = df["Consumer complaint narrative"].iloc[rep_idx][:150].replace("\n", " ")
-    print(f"[{LABELS[t]}]  n={ (df['topic']==t).sum() }")
-    print("   top words :", ", ".join(top_words(t)))
-    print("   exemplar  :", rep, "...\n")
+    print(f"[{LABELS[t]}]  n={(df['topic']==t).sum()}")
+    print("   top words:", ", ".join(top_words(t)))
 
 # %% [markdown]
-# Note Topic 1: the top words ("job properly", "feel job", "sure mistake") do not form a real theme.
-# Inspection shows it is a small pocket of near-identical, templated narratives. A coherence score
-# will not flag this for you; reading the topics will. In a production pass it would be merged out or
-# handled as spam. Leaving it visible and labelled is more honest than quietly dropping it.
+# Topic 1 is a small pocket of near-identical, templated narratives rather than a genuine theme. It is
+# labelled as uncategorised and left out of the theme breakdowns.
 
 # %% [markdown]
 # ## 5. Domain-Specific Sentiment Analysis
@@ -338,16 +280,17 @@ cpi["CPI"] = (0.4*minmax(cpi["volume"]) + 0.4*minmax(-cpi["sentiment"]) + 0.2*mi
 cpi["theme"] = cpi["topic"].map(LABELS)
 cpi = cpi.sort_values("CPI", ascending=False)
 
+THEME_COL = {0: "#dc2626", 2: "#059669", 3: "#d97706", 4: "#7c3aed", 5: "#2563eb", 6: "#64748b"}
 fig, (a1, a2) = plt.subplots(1, 2, figsize=(13, 5))
-a1.barh(cpi["theme"][::-1], cpi["CPI"][::-1], color=PRIMARY)
+a1.barh(cpi["theme"][::-1], cpi["CPI"][::-1], color=[THEME_COL[int(t)] for t in cpi["topic"][::-1]])
 a1.set_title("Themes ranked by CPI"); a1.set_xlabel("Complaint Priority Index (0-100)")
 a1.tick_params(labelsize=9)
-a2.scatter(cpi["sentiment"], cpi["volume"], s=cpi["CPI"]*6, c=cpi["relief_rate"]*100,
-           cmap="RdYlGn", vmin=0, vmax=20, edgecolor=INK, alpha=0.85)
+a2.scatter(cpi["sentiment"], cpi["volume"], s=cpi["CPI"]*6,
+           c=[THEME_COL[int(t)] for t in cpi["topic"]], edgecolor=INK, alpha=0.85)
 for _, r in cpi.iterrows():
     a2.annotate(LABELS[int(r["topic"])][:20], (r["sentiment"], r["volume"]),
                 xytext=(6, 4), textcoords="offset points", fontsize=8)
-a2.set_title("Priority map (bubble = CPI, colour = relief rate)")
+a2.set_title("Priority map (bubble size = CPI, colour = theme)")
 a2.set_xlabel("Sentiment (angrier <-- )"); a2.set_ylabel("Complaints")
 plt.tight_layout(); plt.savefig("figures/05_priority_map.png", dpi=120, bbox_inches="tight"); plt.show()
 
@@ -362,45 +305,7 @@ print("Ranked by CPI        :", list(cpi["theme"]))
 # negative and almost never resolved. Volume alone would have buried both.
 
 # %% [markdown]
-# ## 8. Resolution Outcomes by Theme
-#
-# Describing the complaints does not say whether they get fixed. Using the CFPB outcome field, each
-# complaint is labelled **relief** (money back or a fix) or **explanation-only** (a reply, nothing
-# given), and the relief rate is measured per theme. A chi-square test checks whether the differences
-# between themes are real or just chance.
-
-# %%
-from scipy.stats import chi2_contingency
-
-real = df[df["topic"] != 1]
-by_theme = (real.groupby("topic").agg(n=("relief", "size"), relief_rate=("relief", "mean"))
-            .reset_index().sort_values("relief_rate"))
-by_theme["theme"] = by_theme["topic"].map(LABELS)
-chi2, pval, _, _ = chi2_contingency(pd.crosstab(real["topic"], real["relief"]))
-
-fig, ax = plt.subplots(figsize=(9, 4.5))
-colors = ["#dc2626" if t == 4 else PRIMARY for t in by_theme["topic"]]
-ax.barh(by_theme["theme"], by_theme["relief_rate"] * 100, color=colors)
-for y, v in enumerate(by_theme["relief_rate"] * 100):
-    ax.text(v + 0.25, y, f"{v:.1f}%", va="center", fontsize=9)
-ax.set_title("Share of each theme's complaints closed with relief")
-ax.set_xlabel("% closed with relief"); ax.set_xlim(0, by_theme["relief_rate"].max()*100 + 4)
-plt.tight_layout(); plt.savefig("figures/06_relief_by_theme.png", dpi=120, bbox_inches="tight"); plt.show()
-
-print((by_theme.assign(relief_pct=(by_theme["relief_rate"]*100).round(1)))
-      [["theme", "n", "relief_pct"]].to_string(index=False))
-print(f"\nOverall relief rate: {real['relief'].mean()*100:.1f}%")
-print(f"Chi-square (theme vs relief): chi2={chi2:.1f}, p={pval:.1e}  (p < 0.05 means the theme matters)")
-
-# %% [markdown]
-# **The finding.** Every theme is resolved 12% to 18% of the time, except **investment scams at just
-# 6.4%**, less than half the overall rate. The chi-square test confirms the gap is real, not chance
-# (p is about 0.001). This closes the loop with the CPI: investment scams are the angriest,
-# fastest-growing, *and* least-resolved segment, so current complaint handling serves those victims
-# least.
-
-# %% [markdown]
-# ## 9. Complaints by Product Type
+# ## 8. Complaints by Product Type
 #
 # The themes describe *what went wrong*. The CFPB's product field describes *what kind of product* the
 # complaint is about, a second, independent lens. Grouping by product shows where the volume and the
@@ -439,42 +344,32 @@ print(f"\nAmong investment-scam complaints, {vc_share:.0f}% are about virtual cu
 # crossed.
 
 # %% [markdown]
-# ## 10. Summary and Recommendations
+# ## 9. Summary and Recommendations
 #
-# The pipeline turns 4,282 unread complaints into one decision-ready page:
+# The pipeline turns 4,282 unread complaints into one decision-ready picture:
 #
 # - **Fraud and unauthorized transactions is the biggest theme** (~1,760 complaints) and strongly
-#   negative (about -0.33). The distinct, smaller **investment-scam** theme is among the angriest of
-#   all (~-0.37). Together they mark where the money-anger and the reputational risk concentrate, so
-#   that is where prevention and faster, clearer complaint handling pay off first.
-# - **Accessing and withdrawing funds is the sharpest finding, and only the domain model sees it.**
-#   It is the second-largest theme (~1,200 complaints) *and* the single most negative one under
-#   FinBERT (about -0.39). The generic model had made it look mild, because these complaints are often
-#   politely worded appeals to get funds released. Read with the right tool, this stops looking like
-#   routine friction and becomes a priority: customers cut off from their own money, staying polite,
-#   and quietly furious.
-# - **Wire transfers and cheque deposits** are mid-sized and consistently negative operational
-#   clusters.
-# - **Over time**, the investment-scam share drifted upward across 2019 to 2023 (peaking around 5% of
-#   complaints), consistent with the wider rise of crypto-era investment fraud.
+#   negative. The distinct, smaller **investment-scam** theme is among the angriest of all. Together
+#   they mark where the money-anger and the reputational risk concentrate, so that is where prevention
+#   and faster, clearer complaint handling pay off first.
+# - **Accessing and withdrawing funds is the sharpest finding, and only the domain model sees it.** It
+#   is the second-largest theme and the single most negative one under FinBERT. A generic sentiment
+#   tool made it look mild, because these complaints are often politely worded appeals to get funds
+#   released; read with the right tool it becomes a clear priority.
+# - **Wire transfers and cheque deposits** are mid-sized, consistently negative operational clusters.
+# - **Over time**, the investment-scam share drifted upward across 2019 to 2023, and those scams
+#   concentrate in virtual currency, the crypto-era fraud story.
 #
-# **The method itself carries two findings a careful analyst surfaces, not buries:**
+# Two points about method run through the whole analysis:
 #
-# 1. **Tool choice changes the answer, not just the numbers.** The generic model called 38% of these
+# 1. **The choice of sentiment model changes the answer.** A generic tool called 38% of these
 #    complaints positive and made the most-negative theme look mild; the finance-domain model
-#    disagreed on 25% of complaints and reordered the priorities a business would act on. Choosing the
-#    model to fit the text is not a formality.
-# 2. **Topic count is a defended decision, not a default.** The most "coherent" model was unusable
-#    because it collapsed everything into one topic; the reported structure comes from balancing
-#    coherence against actionable separation, and one residual cluster is openly flagged as noise.
-# 3. **Description was turned into a decision, and then tied to outcomes.** The Complaint Priority
-#    Index (Section 7) ranks where to act and reorders what volume alone would show; the theme-level
-#    relief view (Section 8) shows which problems actually get resolved and which do not.
+#    disagreed on 25% of complaints and reordered the priorities a business would act on.
+# 2. **The Complaint Priority Index turns description into a decision.** Ranking themes by volume,
+#    domain sentiment, and how rarely they are resolved reorders what a simple count would show.
 #
-# This is the same read I applied to community and support text in prior roles: model the whole
-# corpus, choose tools that fit the domain, define a metric that ranks the decision, and be honest
-# about what the method can and cannot see. A written report of these results is in `report.md`, and
-# an interactive version is in `dashboard/index.html`.
+# A written report of these results is in `report.md`, and an interactive version is in
+# `dashboard/index.html`.
 #
 # ### Limitations
 #

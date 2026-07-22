@@ -7,9 +7,8 @@ modelling can be run, it is that the **modelling decisions are made explicitly a
 the vocabulary is built, how the number of topics is chosen, and why a generic sentiment tool is the
 wrong instrument for financial text.
 
-**Skills used:** text mining, topic modelling with principled model selection (coherence + balance),
-domain-specific sentiment modelling benchmarked against a baseline, temporal analysis, and the
-judgement to read model output critically.
+**Skills used:** text mining, topic modelling, domain-specific sentiment modelling benchmarked against
+a baseline, temporal analysis, a priority index, and a product-type breakdown.
 **Stack:** Python, pandas, scikit-learn (TF-IDF, NMF), NLTK (VADER), Hugging Face Transformers
 (FinBERT), matplotlib.
 
@@ -26,10 +25,9 @@ the decisions and in going past description, and this project shows its work on 
 1. **Vocabulary construction is deliberate.** Three layers of stop-words (standard, generic filler,
    and company names removed on purpose), n-grams so "wire transfer" survives, and `min_df` / `max_df`
    thresholds chosen to cut noise and over-common words. Nothing is dumped into a black box.
-2. **The number of topics is chosen, not guessed.** Topic coherence is measured across a range of k.
-   It peaks at k=5, but at k=5 a single catch-all topic swallows 72% of complaints and is useless. The
-   final choice (k=7) balances coherence against actionable separation. Reconstruction error is shown
-   to be the wrong criterion (it always favours more topics).
+2. **The themes come from topic modelling.** After testing a range of options, seven topics gave the
+   clearest, most usable separation, granular enough to act on without fragmenting into overlapping
+   slivers.
 3. **Sentiment is done for the domain.** VADER, the usual baseline, labels 38% of these complaints
    *positive*, because angry customers write politely ("Dear Support Team, I hope this finds you
    well..."). **FinBERT**, a model fine-tuned on financial text, disagrees on 25% of complaints and is
@@ -37,21 +35,19 @@ the decisions and in going past description, and this project shows its work on 
 4. **An original decision metric.** I define a **Complaint Priority Index (CPI)** combining volume,
    domain sentiment, and how rarely a theme is resolved. It reorders priorities that volume alone
    misses, moving fund-access above fraud and lifting investment scams from smallest theme to third.
-5. **Outcomes are tied back to the themes.** Measuring how often each theme is actually resolved shows
-   investment scams are settled far less often (6.4%) than any other problem (12 to 18%), a gap
-   confirmed as significant rather than chance.
-6. **The findings are read critically.** One topic is openly flagged as low-coherence noise, and the
-   sentiment anomaly (a generic tool misreading polite complaints) is explained with evidence.
+5. **A second lens: product type.** Breaking complaints down by payment product shows virtual currency
+   and mobile wallets draw the angriest complaints, and that investment scams concentrate in crypto.
+6. **The findings are read critically.** One weak, templated topic is openly flagged as uncategorised
+   rather than dressed up, and the sentiment anomaly (a generic tool misreading polite complaints) is
+   explained with evidence.
 
 ## Headline findings
 
 - **The politeness trap:** a generic sentiment tool calls 38% of these complaints positive and
   misranks them; a finance-domain model corrects it on 25% of complaints.
 - **The Complaint Priority Index reorders the picture:** *accessing and withdrawing funds* is the top
-  priority (highest volume-weighted anger, low resolution), and *investment scams* rise to third
-  despite low volume, because only **6.4% of scam complaints win any relief** (vs 15.7% overall).
-- **Scams are rarely resolved:** only 6.4% of scam complaints end in relief, against 12 to 18% for
-  every other problem.
+  priority (highest volume-weighted anger, rarely resolved), and *investment scams* rise to third
+  despite being the smallest theme by count.
 - **Crypto concentrates the scams:** virtual currency and mobile wallets draw the angriest complaints,
   and 46% of all investment-scam complaints are about virtual currency.
 
@@ -66,7 +62,7 @@ the decisions and in going past description, and this project shows its work on 
 
 ## Key visual: the priority map
 
-Each theme placed by volume against sentiment, bubble size = CPI, colour = relief rate.
+Each theme placed by volume against sentiment, bubble size = CPI, coloured by theme.
 
 ![Priority map](figures/05_priority_map.png)
 
