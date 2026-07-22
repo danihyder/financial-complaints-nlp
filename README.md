@@ -17,10 +17,9 @@ a baseline, temporal analysis, a priority index, and a product-type breakdown.
 
 ---
 
-## What makes this more than a tutorial
+## Novelty
 
-Most complaint-NLP projects stop at "here are some topics and here is the sentiment." The value is in
-the decisions and in going past description, and this project shows its work on six of them:
+Most projects stop at some topics and the sentiment. The value is in the decisions and in going past description, and this project shows its work on five of them:
 
 1. **Vocabulary construction is deliberate.** Three layers of stop-words (standard, generic filler,
    and company names removed on purpose), n-grams so "wire transfer" survives, and `min_df` / `max_df`
@@ -37,11 +36,8 @@ the decisions and in going past description, and this project shows its work on 
    misses, moving fund-access above fraud and lifting investment scams from smallest theme to third.
 5. **A second lens: product type.** Breaking complaints down by payment product shows virtual currency
    and mobile wallets draw the angriest complaints, and that investment scams concentrate in crypto.
-6. **The findings are read critically.** One weak, templated topic is openly flagged as uncategorised
-   rather than dressed up, and the sentiment anomaly (a generic tool misreading polite complaints) is
-   explained with evidence.
 
-## Headline findings
+## Findings
 
 - **The politeness trap:** a generic sentiment tool calls 38% of these complaints positive and
   misranks them; a finance-domain model corrects it on 25% of complaints.
