@@ -1,4 +1,4 @@
-"""Builds a self-contained INTERACTIVE dashboard app (Tableau/Power BI style) from the complaint
+"""Builds a self-contained INTERACTIVE dashboard from the complaint
 analysis: live filters (year range, sentiment model, outcome), click-a-theme cross-filtering, and
 KPIs + a Complaint Priority Index that recompute client-side.
 
