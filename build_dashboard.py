@@ -45,16 +45,26 @@ LABELS = {0:"Fraud & unauthorized txns",2:"Cheque deposits",3:"Wire transfers",
 sia = SentimentIntensityAnalyzer()
 df["vader"] = df["Consumer complaint narrative"].apply(lambda t: sia.polarity_scores(str(t))["compound"])
 
-# embed only real themes (drop the noise cluster, topic 1)
-d = df[df["topic"] != 1].copy()
+# embed the full dataset; the noise cluster (topic 1) is simply left out of the theme breakdowns
+d = df.copy()
+
+# ---------- product-type dimension (a lens distinct from the problem themes) ----------
+SP_LABELS = ["Mobile / digital wallet", "Domestic transfer", "Virtual currency",
+             "International transfer", "Other"]
+sp_map = {"Mobile or digital wallet": 0, "Domestic (US) money transfer": 1,
+          "Virtual currency": 2, "International money transfer": 3}
+d["sp"] = d["Sub-product"].map(sp_map).fillna(4).astype(int)
+
 DATA = {
     "topic": [int(x) for x in d["topic"]],
     "year": [int(x) for x in d["year"]],
     "fin": [round(float(x), 3) for x in d["finbert"]],
     "vad": [round(float(x), 3) for x in d["vader"]],
     "relief": [int(x) for x in d["relief"]],
+    "sp": [int(x) for x in d["sp"]],
 }
 PAYLOAD = json.dumps({"data": DATA, "labels": {str(k): v for k, v in LABELS.items()},
+                      "sp_labels": SP_LABELS,
                       "years": sorted(int(y) for y in d["year"].unique())})
 
 # ---------- HTML ----------
@@ -126,8 +136,8 @@ STYLE = """
 BODY = """
 <div class="app">
   <h1>Digital-Payment Complaints: Interactive Analytics</h1>
-  <p class="sub">4,282 public financial complaints. Filter by year and outcome, switch the sentiment
-  model, and click any theme to cross-filter every view.</p>
+  <p class="sub">Public financial complaints about digital payments. Filter by year and outcome, switch
+  the sentiment model, and click any theme or product to cross-filter every chart.</p>
 
   <div class="bar">
     <div class="ctl"><label>Year range</label>
@@ -170,44 +180,40 @@ BODY = """
     <div class="panel"><h3>Complaint Priority Index</h3>
       <p class="hint">Click a bar to focus that theme across the whole dashboard.</p>
       <div id="cpi" class="js-plot"></div>
-      <p class="note">A combined score ranking each theme by its number of complaints, how negative
-      the language is, and how rarely the complaints are resolved. It places trouble getting money out
-      above fraud, which a simple count would miss.</p></div>
+      <p class="note">A combined score ranking each theme by how many complaints it has, how negative they are, and how
+      rarely they are resolved.</p></div>
     <div class="panel"><h3>Priority map</h3>
       <p class="hint">Each bubble is one theme.</p>
       <div id="bubble" class="js-plot"></div>
-      <p class="note">Each theme by number of complaints and average sentiment. Bubble size reflects
-      the priority score and colour shows how often complaints are resolved. Large, negative,
-      rarely-resolved themes sit in the upper left.</p></div>
+      <p class="note">Each theme placed by its number of complaints and average sentiment; bubble size
+      is the priority score, and each theme keeps its own colour across the dashboard.</p></div>
     <div class="panel"><h3>Theme mix over time</h3>
       <p class="hint">Share of each year's complaints.</p>
       <div id="trend" class="js-plot"></div>
-      <p class="note">The share of each year's complaints falling into each theme. Investment scams
-      rise gradually over the period, while money access and fraud remain the largest throughout.</p></div>
+      <p class="note">The share of each year's complaints falling into each theme.</p></div>
     <div class="panel"><h3>Sentiment distribution</h3>
       <p class="hint">Switch the model above to compare the two.</p>
       <div id="dist" class="js-plot"></div>
-      <p class="note">The spread of complaint sentiment, from negative on the left to positive on the
-      right. The general-purpose model reads many polite complaints as positive; the finance model
-      reads them as negative.</p></div>
-    <div class="panel full"><h3>Which problems get resolved</h3>
-      <p class="hint">Share of each theme's complaints that ended with the customer getting relief.</p>
-      <div id="relief" class="js-plot" style="height:340px"></div>
-      <p class="note">The percentage of each theme's complaints closed with relief (money back or a
-      fix), rather than an explanation alone. Investment scams are resolved far less often than any
-      other problem, reinforcing why they rank so high on priority.</p></div>
+      <p class="note">The spread of complaint sentiment, from negative on the left to positive on the right.</p></div>
+    <div class="panel full"><h3>Complaints by product type</h3>
+      <p class="hint">A different lens: what kind of payment product each complaint is about. Responds
+      to every filter above.</p>
+      <div id="sp" class="js-plot" style="height:300px"></div>
+      <p class="note">The mix of product types behind the complaints, each bar coloured by how negative those complaints
+      are.</p></div>
   </div>
 
   <p class="foot">Data: public US CFPB Consumer Complaint Database (money transfer / virtual currency /
-  money service, complaints with narratives, 2017-2024). One small low-coherence cluster is excluded.
-  No confidential or employer data; company names excluded from the analysis.</p>
+  money service, complaints with narratives, 2017-2024). A small low-coherence cluster of complaints is
+  left out of the theme breakdowns. No confidential or employer data; company names excluded from the
+  analysis.</p>
 </div>
 """
 
 APP = """
 <script>
 const P = __PAYLOAD__;
-const D = P.data, LAB = P.labels;
+const D = P.data, LAB = P.labels, SP = P.sp_labels;
 const THEMES = Object.keys(LAB).map(Number);
 const YMIN = P.years[0], YMAX = P.years[P.years.length-1];
 const COL = {"0":"#dc2626","2":"#059669","3":"#d97706","4":"#7c3aed","5":"#2563eb","6":"#64748b"};
@@ -231,7 +237,7 @@ function mm(arr){const mn=Math.min(...arr),mx=Math.max(...arr);return arr.map(v=
 
 function aggregate(idx){
   const a={}; THEMES.forEach(t=>a[t]={n:0,sent:0,rel:0});
-  idx.forEach(i=>{const t=D.topic[i];a[t].n++;a[t].sent+=sentOf(i);a[t].rel+=D.relief[i];});
+  idx.forEach(i=>{const t=D.topic[i]; if(a[t]===undefined) return; a[t].n++;a[t].sent+=sentOf(i);a[t].rel+=D.relief[i];});
   const T=THEMES.filter(t=>a[t].n>0);
   T.forEach(t=>{a[t].mean=a[t].sent/a[t].n;a[t].reliefRate=a[t].rel/a[t].n;});
   const vol=mm(T.map(t=>a[t].n)), neg=mm(T.map(t=>-a[t].mean)), unr=mm(T.map(t=>1-a[t].reliefRate));
@@ -253,15 +259,16 @@ function kpis(idx){
     `<div class="kpi"><div class="n">${k[0]}</div><div class="l">${k[1]}</div></div>`).join("");
 }
 
+const isThemeFocus = t => S.focus && S.focus.k==="t" && S.focus.v===t;
+const isProdFocus  = s => S.focus && S.focus.k==="p" && S.focus.v===s;
+
 function drawCPI(agg){
   const T=[...agg.T].sort((x,y)=>agg.a[x].cpi-agg.a[y].cpi);
   Plotly.react("cpi",[{type:"bar",orientation:"h",x:T.map(t=>agg.a[t].cpi),y:T.map(t=>LAB[t]),
-    marker:{color:T.map(t=>S.focus===null||S.focus===t?COL[t]:"#cbd5e1")},
+    marker:{color:T.map(t=>(S.focus&&S.focus.k==="t"&&!isThemeFocus(t))?"#cbd5e1":COL[t])},
     customdata:T.map(t=>t),
     hovertemplate:"%{y}<br>CPI %{x:.0f}<extra></extra>"}],
     {...LY,margin:{t:8,l:150,r:12,b:30},xaxis:{title:""}},PLOT);
-  document.getElementById("cpi").on("plotly_click",e=>{
-    const t=e.points[0].customdata; S.focus=(S.focus===t?null:t); render();});
 }
 function drawBubble(agg){
   const T=agg.T, big=Math.max(...T.map(t=>agg.a[t].cpi),1);
@@ -269,21 +276,19 @@ function drawBubble(agg){
     x:T.map(t=>agg.a[t].mean),y:T.map(t=>agg.a[t].n),text:T.map(t=>LAB[t].slice(0,16)),textposition:"top center",
     textfont:{size:9},
     marker:{size:T.map(t=>agg.a[t].cpi),sizemode:"area",sizeref:2*big/(46*46),sizemin:5,
-      color:T.map(t=>agg.a[t].reliefRate*100),colorscale:"RdYlGn",cmin:0,cmax:20,
-      line:{width:T.map(t=>S.focus===t?3:1),color:"#0f172a"}},
+      color:T.map(t=>COL[t]),
+      line:{width:T.map(t=>isThemeFocus(t)?3:1),color:"#0f172a"}},
     customdata:T.map(t=>[agg.a[t].cpi,agg.a[t].reliefRate*100,t]),
     hovertemplate:"<b>%{text}</b><br>vol %{y}<br>sent %{x:.2f}<br>relief %{customdata[1]:.1f}%<br>CPI %{customdata[0]:.0f}<extra></extra>"}],
     {...LY,xaxis:{title:"sentiment (angrier <-)"},yaxis:{title:"complaints"}},PLOT);
-  document.getElementById("bubble").on("plotly_click",e=>{
-    const t=e.points[0].customdata[2]; S.focus=(S.focus===t?null:t); render();});
 }
 function drawTrend(idx){
-  const ts=(S.focus===null)?THEMES:[S.focus];
+  const ts=(S.focus&&S.focus.k==="t")?[S.focus.v]:THEMES;
   const yrs=[]; for(let y=Math.max(S.ymin,2018);y<=Math.min(S.ymax,2023);y++) yrs.push(y);
-  const per={}; yrs.forEach(y=>per[y]={tot:0}); idx.forEach(i=>{const y=D.year[i];if(per[y]){per[y].tot++;per[y][D.topic[i]]=(per[y][D.topic[i]]||0)+1;}});
+  const per={}; yrs.forEach(y=>per[y]={tot:0}); idx.forEach(i=>{const y=D.year[i],t=D.topic[i];if(per[y]&&t!==1){per[y].tot++;per[y][t]=(per[y][t]||0)+1;}});
   const traces=ts.map(t=>({type:"scatter",mode:"lines+markers",name:LAB[t],
     x:yrs,y:yrs.map(y=>per[y].tot?100*(per[y][t]||0)/per[y].tot:0),
-    line:{width:3,color:COL[t]}}));
+    line:{width:3,color:COL[t]}, customdata:yrs.map(()=>t)}));
   Plotly.react("trend",traces,{...LY,showlegend:ts.length>1,legend:{font:{size:9},orientation:"h",y:-0.2},
     yaxis:{title:"% of year",ticksuffix:"%"}},PLOT);
 }
@@ -292,27 +297,41 @@ function drawDist(idx){
     marker:{color:S.model==="fin"?"#2563eb":"#64748b"}}],
     {...LY,xaxis:{title:"negative to positive"},yaxis:{title:"complaints"},bargap:0.02},PLOT);
 }
-function drawRelief(yearIdx){
-  const a={}; THEMES.forEach(t=>a[t]={n:0,r:0});
-  yearIdx.forEach(i=>{const t=D.topic[i]; if(a[t]){a[t].n++; a[t].r+=D.relief[i];}});
-  const rows=THEMES.filter(t=>a[t].n>0).map(t=>({t,rate:a[t].r/a[t].n*100})).sort((x,y)=>x.rate-y.rate);
-  Plotly.react("relief",[{type:"bar",orientation:"h",
-    x:rows.map(r=>r.rate), y:rows.map(r=>LAB[r.t]),
-    marker:{color:rows.map(r=>r.t===4?"#dc2626":"#2563eb")},
-    text:rows.map(r=>r.rate.toFixed(1)+"%"), textposition:"outside", cliponaxis:false,
-    hovertemplate:"%{y}<br>%{x:.1f}% closed with relief<extra></extra>"}],
-    {...LY,margin:{t:8,l:150,r:30,b:30},
-     xaxis:{title:"% of complaints closed with relief",ticksuffix:"%"}},PLOT);
+function drawSubproduct(idx){
+  const a=SP.map(()=>({n:0,sent:0}));
+  idx.forEach(i=>{const s=D.sp[i]; a[s].n++; a[s].sent+=sentOf(i);});
+  const rows=[]; for(let s=0;s<SP.length;s++) if(a[s].n>0) rows.push({s,n:a[s].n,mean:a[s].sent/a[s].n});
+  rows.sort((x,y)=>x.n-y.n);
+  Plotly.react("sp",[{type:"bar",orientation:"h",
+    x:rows.map(r=>r.n), y:rows.map(r=>SP[r.s]),
+    marker:{color:rows.map(r=>r.mean),colorscale:[[0,"#b91c1c"],[0.5,"#f87171"],[1,"#fecaca"]],
+      cmin:-0.42,cmax:-0.26,
+      line:{width:rows.map(r=>isProdFocus(r.s)?2.5:0),color:"#0f172a"},
+      colorbar:{title:{text:"avg sentiment<br>(redder = angrier)",side:"right"},thickness:10,len:0.85,x:1.02,
+        tickfont:{size:9}}},
+    customdata:rows.map(r=>r.s), text:rows.map(r=>r.mean.toFixed(2)), textposition:"none",
+    hovertemplate:"%{y}<br>%{x} complaints<br>avg sentiment %{text}<extra></extra>"}],
+    {...LY,margin:{t:8,l:150,r:50,b:30},xaxis:{title:"complaints"}},PLOT);
 }
 
 function render(){
   const bidx=baseIdx();
-  const agg=aggregate(bidx);
-  const focusIdx=(S.focus===null)?bidx:bidx.filter(i=>D.topic[i]===S.focus);
-  const yearIdx=[]; for(let i=0;i<N;i++){ if(D.year[i]>=S.ymin && D.year[i]<=S.ymax) yearIdx.push(i); }
-  kpis(focusIdx); drawCPI(agg); drawBubble(agg); drawTrend(bidx); drawDist(focusIdx); drawRelief(yearIdx);
+  const themeAxis=(S.focus&&S.focus.k==="p")?bidx.filter(i=>D.sp[i]===S.focus.v):bidx;
+  const prodAxis =(S.focus&&S.focus.k==="t")?bidx.filter(i=>D.topic[i]===S.focus.v):bidx;
+  const fullIdx  =(S.focus===null)?bidx:bidx.filter(i=>S.focus.k==="t"?D.topic[i]===S.focus.v:D.sp[i]===S.focus.v);
+  kpis(fullIdx);
+  drawCPI(aggregate(themeAxis)); drawBubble(aggregate(themeAxis)); drawTrend(themeAxis);
+  drawDist(fullIdx); drawSubproduct(prodAxis);
   document.getElementById("focusnote").textContent =
-    S.focus===null ? "" : "Focused on: "+LAB[S.focus]+"  (click it again or Reset to clear)";
+    S.focus===null ? "" : "Focused on: "+(S.focus.k==="t"?LAB[S.focus.v]:SP[S.focus.v])+"  (click it again, or Reset, to clear)";
+}
+function toggleTheme(t){ S.focus=isThemeFocus(t)?null:{k:"t",v:t}; render(); }
+function toggleProd(s){ S.focus=isProdFocus(s)?null:{k:"p",v:s}; render(); }
+function attachClicks(){
+  document.getElementById("cpi").on("plotly_click",e=>toggleTheme(e.points[0].customdata));
+  document.getElementById("bubble").on("plotly_click",e=>toggleTheme(e.points[0].customdata[2]));
+  document.getElementById("trend").on("plotly_click",e=>toggleTheme(e.points[0].customdata));
+  document.getElementById("sp").on("plotly_click",e=>toggleProd(e.points[0].customdata));
 }
 
 // ---- controls ----
@@ -337,7 +356,7 @@ document.getElementById("reset").onclick=()=>{
   emin.value=YMIN;emax.value=YMAX;syncLabels();
   document.querySelectorAll(".seg button").forEach(b=>b.classList.toggle("on",b.dataset.v==="fin"||b.dataset.v==="all"));
   render();};
-syncLabels(); render();
+syncLabels(); render(); attachClicks();
 </script>
 """
 

@@ -1,6 +1,6 @@
 # An NLP Analysis of Consumer Financial Complaints
 
-### ▶ [Open the live interactive dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)
+### ▶ [Open the interactive dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)
 
 A domain-aware NLP study of digital-payment complaints. The point is not that sentiment and topic
 modelling can be run, it is that the **modelling decisions are made explicitly and defended**: how
@@ -40,8 +40,8 @@ the decisions and in going past description, and this project shows its work on 
 5. **Outcomes are tied back to the themes.** Measuring how often each theme is actually resolved shows
    investment scams are settled far less often (6.4%) than any other problem (12 to 18%), a gap
    confirmed as significant rather than chance.
-6. **The findings are read critically.** One topic is openly flagged as low-coherence noise, the
-   sentiment anomaly is explained with evidence, and the modest predictive power is stated honestly.
+6. **The findings are read critically.** One topic is openly flagged as low-coherence noise, and the
+   sentiment anomaly (a generic tool misreading polite complaints) is explained with evidence.
 
 ## Headline findings
 
@@ -52,13 +52,15 @@ the decisions and in going past description, and this project shows its work on 
   despite low volume, because only **6.4% of scam complaints win any relief** (vs 15.7% overall).
 - **Scams are rarely resolved:** only 6.4% of scam complaints end in relief, against 12 to 18% for
   every other problem.
+- **Crypto concentrates the scams:** virtual currency and mobile wallets draw the angriest complaints,
+  and 46% of all investment-scam complaints are about virtual currency.
 
 ## Deliverables
 
 | Asset | Description |
 |---|---|
 | `report.md` | Analysis report including executive summary, methodology, findings, recommendations |
-| **[Live dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)** (`dashboard/index.html`) | A **self-contained interactive dashboard app**. Live filters (year range, sentiment model, outcome). |
+| **[Interactive dashboard](https://danihyder.github.io/financial-complaints-nlp/dashboard/)** (`dashboard/index.html`) | A **self-contained interactive dashboard app**. Filters for year range, sentiment model, and outcome; click any theme or product to cross-filter every chart. |
 | `complaints-nlp-analysis.ipynb` | The full reproducible notebook: code, explanations, charts |
 | `notebook.py` | The notebook as a plain script |
 

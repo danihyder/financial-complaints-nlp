@@ -2,7 +2,7 @@
 ### Digital-payment complaints: themes, sentiment, priority, and outcomes
 
 **Data:** US CFPB Consumer Complaint Database (public)
-**Methods:** text mining, topic modelling, sentiment analysis with a finance-specific model, outcome analysis by theme
+**Methods:** text mining, topic modelling, sentiment analysis with a finance-specific model, outcome and product-type analysis
 **Companion files:** the full notebook (`complaints-nlp-analysis.ipynb`) and an interactive dashboard (`dashboard/index.html`)
 
 ---
@@ -29,8 +29,7 @@ Four things stand out:
    anything back, compared with about 16% overall. The word "scam" is the single clearest sign a
    complaint will get a reply and nothing more.
 4. **What a complaint is about decides how it ends.** Resolution rates run from 6% for scams to 18%
-   for money-access problems, a gap far too large to be chance. The type of problem, not the wording,
-   is what shapes the outcome.
+   for money-access problems, a gap far too large to be chance.
 
 The rest of this report explains the data, how the analysis was done and why, the findings in full,
 and where the limits are.
@@ -120,10 +119,6 @@ how each case ended, I marked every complaint as either **got relief** (money ba
 **explanation only** (a reply, but nothing given), then measured the relief rate for each theme. A
 chi-square test checks whether the differences between themes are real or just chance.
 
-(An earlier version trained a model on the raw complaint words to predict the outcome. It was dropped:
-its "important" words were mostly generic noise with no real meaning, and the theme-level view below is
-both more honest and more useful.)
-
 ## 4. What the data shows
 
 ### 4.1 The overall picture
@@ -193,6 +188,24 @@ least-resolved group of all**, and the current way complaints are handled serves
 Looking across 2018 to 2023, the share of **investment-scam complaints crept up** (from around 3% to
 over 5%), which fits the wider rise in crypto-era investment fraud. Fraud and money-access stayed the
 biggest problems throughout.
+
+### 4.7 Which products draw the angriest complaints
+
+The themes describe *what went wrong*. The product field describes *what kind of product* the
+complaint is about, a second, independent lens:
+
+| Product | Complaints | Sentiment | Got help |
+|---|---:|---:|---:|
+| Mobile / digital wallet | 1,573 | -0.39 | 18.2% |
+| Domestic transfer | 1,208 | -0.32 | 14.1% |
+| Virtual currency | 677 | -0.39 | 16.4% |
+| International transfer | 446 | -0.29 | 13.9% |
+| Other | 378 | -0.34 | 11.1% |
+
+Mobile wallets carry the most complaints, but **mobile wallets and virtual currency draw the most
+negative language** (both around -0.39), while international transfers are the calmest (-0.29). The two
+lenses also connect: **nearly half (46%) of all investment-scam complaints are about virtual
+currency**, so the crypto-era scam story shows up clearly when the theme and product views are crossed.
 
 ## 5. What I would recommend
 

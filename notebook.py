@@ -21,7 +21,8 @@
 #   a finance-domain model (Section 5).
 # - **What actually changed over eight years** (Section 6), because a single snapshot hides the trend.
 # - **An original priority metric** I define to turn the measurements into a ranked decision
-#   (Section 7), and a look at **which problems actually get resolved** (Section 8).
+#   (Section 7), a look at **which problems actually get resolved** (Section 8), and **which products
+#   draw the angriest complaints** (Section 9).
 #
 # ### The data
 #
@@ -368,10 +369,6 @@ print("Ranked by CPI        :", list(cpi["theme"]))
 # complaint is labelled **relief** (money back or a fix) or **explanation-only** (a reply, nothing
 # given), and the relief rate is measured per theme. A chi-square test checks whether the differences
 # between themes are real or just chance.
-#
-# (An earlier version trained a model on the raw complaint words to predict the outcome. It was
-# dropped: its "important" words were mostly generic noise with no real meaning. The theme-level view
-# below is more honest and more useful.)
 
 # %%
 from scipy.stats import chi2_contingency
@@ -404,7 +401,46 @@ print(f"Chi-square (theme vs relief): chi2={chi2:.1f}, p={pval:.1e}  (p < 0.05 m
 # least.
 
 # %% [markdown]
-# ## 9. What an analyst would report
+# ## 9. Which products draw the angriest complaints
+#
+# The themes describe *what went wrong*. The CFPB's product field describes *what kind of product* the
+# complaint is about, a second, independent lens. Grouping by product shows where the volume and the
+# anger sit, and where the investment scams concentrate.
+
+# %%
+import matplotlib
+sp_map = {"Mobile or digital wallet": "Mobile / digital wallet",
+          "Domestic (US) money transfer": "Domestic transfer",
+          "Virtual currency": "Virtual currency",
+          "International money transfer": "International transfer"}
+df["product"] = df["Sub-product"].map(sp_map).fillna("Other")
+prod = (df.groupby("product").agg(n=("relief", "size"), sentiment=("finbert", "mean"),
+        relief=("relief", "mean")).reset_index().sort_values("n"))
+
+norm = matplotlib.colors.Normalize(vmin=-0.42, vmax=-0.26)
+colors = [matplotlib.cm.Reds(0.25 + 0.75 * (1 - norm(s))) for s in prod["sentiment"]]  # angrier = darker red
+fig, ax = plt.subplots(figsize=(9, 4.5))
+ax.barh(prod["product"], prod["n"], color=colors)
+for y, (v, s) in enumerate(zip(prod["n"], prod["sentiment"])):
+    ax.text(v + 15, y, f"{v:,}  ({s:.2f})", va="center", fontsize=9)
+ax.set_title("Complaints by product type (bar colour = sentiment, redder is angrier)")
+ax.set_xlabel("complaints"); ax.set_xlim(0, prod["n"].max() * 1.18)
+plt.tight_layout(); plt.savefig("figures/07_by_product.png", dpi=120, bbox_inches="tight"); plt.show()
+
+print(prod.assign(relief_pct=(prod["relief"] * 100).round(1), sent=prod["sentiment"].round(3))
+      [["product", "n", "sent", "relief_pct"]].to_string(index=False))
+vc_share = (df[df["topic"] == 4]["product"] == "Virtual currency").mean() * 100
+print(f"\nAmong investment-scam complaints, {vc_share:.0f}% are about virtual currency.")
+
+# %% [markdown]
+# **The finding.** Mobile wallets carry the most complaints, but **mobile wallets and virtual currency
+# draw the most negative language** (both around -0.39), while international transfers are the calmest
+# (about -0.29). And the two lenses connect: nearly **half of all investment-scam complaints are about
+# virtual currency**, so the crypto-era scam story shows up clearly when the theme and product views are
+# crossed.
+
+# %% [markdown]
+# ## 10. What an analyst would report
 #
 # The pipeline turns 4,282 unread complaints into one decision-ready page:
 #
