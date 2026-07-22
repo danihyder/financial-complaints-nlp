@@ -153,12 +153,12 @@ Ranking by the Priority Index instead of by raw count changes the picture:
 
 | Rank | Problem | Complaints | Sentiment | Got help | Priority |
 |---|---|---:|---:|---:|---:|
-| 1 | Trouble getting / withdrawing money | 1,181 | -0.40 | 17.9% | 65 |
-| 2 | Fraud & unauthorised transactions | 1,781 | -0.33 | 16.4% | 63 |
+| 1 | Trouble getting / withdrawing money | 1,199 | -0.39 | 18.3% | 66 |
+| 2 | Fraud & unauthorised transactions | 1,760 | -0.33 | 16.4% | 64 |
 | 3 | Investment scams | 156 | -0.37 | 6.4% | 52 |
-| 4 | Account limits & appeals | 255 | -0.36 | 16.1% | 35 |
-| 5 | Cheque deposits | 342 | -0.33 | 14.9% | 30 |
-| 6 | Wire transfers | 465 | -0.27 | 12.9% | 16 |
+| 4 | Account limits & appeals | 254 | -0.36 | 15.4% | 35 |
+| 5 | Cheque deposits | 343 | -0.33 | 14.9% | 31 |
+| 6 | Wire transfers | 469 | -0.27 | 12.4% | 18 |
 
 Two changes matter. **Trouble getting your money out** jumps above the bigger fraud group, because it
 is the most negative and one of the least likely to be resolved: people locked out of their own money,
@@ -172,7 +172,7 @@ The prediction model is honestly only so-so at guessing the outcome (it gets the
 63% of the time), because whether someone gets helped depends a lot on company policy that the text
 cannot see. But the *direction* is clear and useful:
 
-- **Points to getting help:** *froze, holding, item, purchases, locked, balance.* Clear, specific,
+- **Points to getting help:** *froze, holding, item, seller, purchases.* Clear, specific,
   checkable problems.
 - **Points to an explanation and nothing more:** *scam, verification, never received.* Fuzzy cases,
   or ones where blame is hard to pin down.

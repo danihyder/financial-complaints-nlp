@@ -107,7 +107,9 @@ plt.tight_layout(); plt.savefig("figures/01_overview.png", dpi=120, bbox_inches=
 brand_stop = {
     "paypal", "coinbase", "venmo", "cashapp", "cash app", "chase", "wells", "fargo", "wells fargo",
     "bank america", "america", "zelle", "citibank", "chase bank", "cash", "app", "bank",
-    "moneygram", "western union", "western", "union", "wu",
+    "moneygram", "western union", "western", "union", "wu", "binance", "gemini", "robinhood",
+    "chime", "remitly", "square", "skrill", "revolut", "wise", "kraken", "stripe", "affirm",
+    "klarna", "varo", "sofi", "dave", "netspend",
 }
 custom_stop = set(stopwords.words("english")) | brand_stop | {
     "xxxx", "xx", "xxxxxxxx", "account", "money", "company", "would", "said", "told",
@@ -417,13 +419,13 @@ print(f"\nInvestment-scam relief rate: {scam_relief:.1f}% (vs {df['relief'].mean
 #
 # The pipeline turns 4,282 unread complaints into one decision-ready page:
 #
-# - **Fraud and unauthorized transactions is the biggest theme** (~1,780 complaints) and strongly
+# - **Fraud and unauthorized transactions is the biggest theme** (~1,760 complaints) and strongly
 #   negative (about -0.33). The distinct, smaller **investment-scam** theme is among the angriest of
 #   all (~-0.37). Together they mark where the money-anger and the reputational risk concentrate, so
 #   that is where prevention and faster, clearer complaint handling pay off first.
 # - **Accessing and withdrawing funds is the sharpest finding, and only the domain model sees it.**
-#   It is the second-largest theme (~1,180 complaints) *and* the single most negative one under
-#   FinBERT (about -0.40). The generic model had made it look mild, because these complaints are often
+#   It is the second-largest theme (~1,200 complaints) *and* the single most negative one under
+#   FinBERT (about -0.39). The generic model had made it look mild, because these complaints are often
 #   politely worded appeals to get funds released. Read with the right tool, this stops looking like
 #   routine friction and becomes a priority: customers cut off from their own money, staying polite,
 #   and quietly furious.
