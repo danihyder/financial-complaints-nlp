@@ -2,14 +2,13 @@
 # # An NLP Analysis of Consumer Financial Complaints
 # ### Digital-payment complaints: themes, sentiment, priority, and outcomes
 #
-# **Author:** Daniyal Haider Mahar
 # **Methods:** text mining, topic modelling with principled model selection, domain-specific
 # sentiment (FinBERT) benchmarked against a generic baseline, temporal analysis.
 # **Stack:** Python, pandas, scikit-learn, NLTK, Hugging Face Transformers, matplotlib.
 #
 # ---
 #
-# ### What this is, and what makes it more than a demo
+# ### Overview
 #
 # Sentiment-and-topics on complaint text is a common exercise. The parts that matter, and that this
 # notebook makes visible rather than hiding, are the *decisions*:
@@ -58,7 +57,7 @@ PRIMARY = "#2563eb"
 PALETTE = ["#2563eb", "#dc2626", "#059669", "#d97706", "#7c3aed", "#0891b2", "#64748b"]
 
 # %% [markdown]
-# ## 2. Load and first look
+# ## 2. The Dataset
 #
 # Before modelling, look at the raw shape: size, time span, and one real record so we know what the
 # text is like. CFPB masks personal details as runs of X.
@@ -88,7 +87,7 @@ a2.set_title("Most common issues (CFPB labels)"); a2.set_xlabel("Complaints")
 plt.tight_layout(); plt.savefig("figures/01_overview.png", dpi=120, bbox_inches="tight"); plt.show()
 
 # %% [markdown]
-# ## 3. Building the vocabulary (the "dictionary")
+# ## 3. Building the Vocabulary
 #
 # Topic models do not read words, they read a numeric matrix. Building that matrix well is most of
 # the work, and every choice below is deliberate:
@@ -132,7 +131,7 @@ print(f"Matrix: {X.shape[0]:,} complaints x {X.shape[1]:,} vocabulary terms")
 print("Sample of the vocabulary:", ", ".join(list(vocab[::150])))
 
 # %% [markdown]
-# ## 4. Choosing the number of topics (not guessing it)
+# ## 4. Selecting the Number of Topics
 #
 # The hardest honest question in topic modelling is "how many topics?". Two things people get wrong:
 # picking a round number, or trusting reconstruction error (which always improves with more topics,
@@ -220,9 +219,9 @@ for t in range(K):
 # handled as spam. Leaving it visible and labelled is more honest than quietly dropping it.
 
 # %% [markdown]
-# ## 5. Sentiment done for the domain, not for tweets
+# ## 5. Domain-Specific Sentiment Analysis
 #
-# ### 5a. The baseline, and why it fails here
+# ### 5a. A Generic Baseline Model
 #
 # VADER is the usual first reach: a rule-based lexicon that scores text from -1 to +1. It was tuned
 # on social media, and on formal complaint language it makes a specific, revealing mistake.
@@ -245,7 +244,7 @@ print(" ", df.sort_values("vader", ascending=False)["Consumer complaint narrativ
 # topic (full of formal appeal letters) is exactly where this concentrates. A generic tool is
 # measuring etiquette, not sentiment.
 #
-# ### 5b. The domain model: FinBERT
+# ### 5b. A Finance-Domain Model (FinBERT)
 #
 # **FinBERT** is a BERT model fine-tuned on financial text. It reads whole sentences in context, so
 # "I hope you are well but my funds are frozen" is understood as negative. Scores for all 4,282
@@ -291,7 +290,7 @@ plt.tight_layout(); plt.savefig("figures/03_sentiment_models.png", dpi=120, bbox
 print(f"On {flip} complaints ({flip/len(df)*100:.0f}%) the two models flatly disagree, and FinBERT is right on inspection.")
 
 # %% [markdown]
-# ## 6. What changed over eight years
+# ## 6. Trends Over Time
 #
 # A single snapshot hides movement. Two temporal views, using FinBERT sentiment and the theme
 # assignments: how the theme mix shifted, and whether complaints got angrier.
@@ -313,7 +312,7 @@ print("Investment-scam share by year (%):")
 print((yr.groupby("year")["topic"].apply(lambda s: (s == 4).mean()*100)).round(1))
 
 # %% [markdown]
-# ## 7. An original decision metric: the Complaint Priority Index (CPI)
+# ## 7. The Complaint Priority Index
 #
 # Sentiment and topics describe the data. A business still has to decide *what to fix first*, and
 # volume alone is a poor guide (a huge theme people barely mind is lower priority than a smaller one
@@ -363,7 +362,7 @@ print("Ranked by CPI        :", list(cpi["theme"]))
 # negative and almost never resolved. Volume alone would have buried both.
 
 # %% [markdown]
-# ## 8. Which problems get resolved?
+# ## 8. Resolution Outcomes by Theme
 #
 # Describing the complaints does not say whether they get fixed. Using the CFPB outcome field, each
 # complaint is labelled **relief** (money back or a fix) or **explanation-only** (a reply, nothing
@@ -401,7 +400,7 @@ print(f"Chi-square (theme vs relief): chi2={chi2:.1f}, p={pval:.1e}  (p < 0.05 m
 # least.
 
 # %% [markdown]
-# ## 9. Which products draw the angriest complaints
+# ## 9. Complaints by Product Type
 #
 # The themes describe *what went wrong*. The CFPB's product field describes *what kind of product* the
 # complaint is about, a second, independent lens. Grouping by product shows where the volume and the
@@ -440,7 +439,7 @@ print(f"\nAmong investment-scam complaints, {vc_share:.0f}% are about virtual cu
 # crossed.
 
 # %% [markdown]
-# ## 10. What an analyst would report
+# ## 10. Summary and Recommendations
 #
 # The pipeline turns 4,282 unread complaints into one decision-ready page:
 #
